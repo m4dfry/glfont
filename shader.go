@@ -67,32 +67,31 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-var fragmentFontShader = `#version 150 core
-in vec2 fragTexCoord;
-out vec4 outputColor;
+var fragmentFontShader = `#version 120
+varying vec2 fragTexCoord;
 
 uniform sampler2D tex;
 uniform vec4 textColor;
 
 void main()
 {    
-    vec4 sampled = vec4(1.0, 1.0, 1.0, texture(tex, fragTexCoord).r);
-    outputColor = textColor * sampled;
+    vec4 sampled = vec4(1.0, 1.0, 1.0, texture2D(tex, fragTexCoord).r);
+    gl_FragColor = textColor * sampled;
 }` + "\x00"
 
-var vertexFontShader = `#version 150 core
+var vertexFontShader = `#version 120
 
 //vertex position
-in vec2 vert;
+attribute vec2 vert;
 
 //pass through to fragTexCoord
-in vec2 vertTexCoord;
+attribute vec2 vertTexCoord;
 
 //window res
 uniform vec2 resolution;
 
 //pass to frag
-out vec2 fragTexCoord;
+varying vec2 fragTexCoord;
 
 void main() {
    // convert the rectangle from pixels to 0.0 to 1.0
