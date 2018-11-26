@@ -67,31 +67,57 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 	return shader, nil
 }
 
-var fragmentFontShader = `#version 120
-varying vec2 fragTexCoord;
+var fragmentFontShader = `
+#version 120
+
+#if __VERSION__ >= 130
+#define COMPAT_VARYING out
+#define COMPAT_ATTRIBUTE in
+#define COMPAT_TEXTURE texture
+#define COMPAT_FRAGCOLOR FragColor
+#else
+#define COMPAT_VARYING varying
+#define COMPAT_ATTRIBUTE attribute
+#define COMPAT_TEXTURE texture2D
+#define COMPAT_FRAGCOLOR gl_FragColor
+#endif
+
+COMPAT_VARYING vec2 fragTexCoord;
+COMPAT_VARYING vec4 FragColor;
 
 uniform sampler2D tex;
 uniform vec4 textColor;
 
 void main()
-{    
-    vec4 sampled = vec4(1.0, 1.0, 1.0, texture2D(tex, fragTexCoord).r);
-    gl_FragColor = textColor * sampled;
+{
+    vec4 sampled = vec4(1.0, 1.0, 1.0, COMPAT_TEXTURE(tex, fragTexCoord).r);
+    COMPAT_FRAGCOLOR = textColor * sampled;
 }` + "\x00"
 
-var vertexFontShader = `#version 120
+var vertexFontShader = `
+#version 120
+
+#if __VERSION__ >= 130
+#define COMPAT_VARYING out
+#define COMPAT_ATTRIBUTE in
+#define COMPAT_TEXTURE texture
+#else
+#define COMPAT_VARYING varying
+#define COMPAT_ATTRIBUTE attribute
+#define COMPAT_TEXTURE texture2D
+#endif
 
 //vertex position
-attribute vec2 vert;
+COMPAT_ATTRIBUTE vec2 vert;
 
 //pass through to fragTexCoord
-attribute vec2 vertTexCoord;
+COMPAT_ATTRIBUTE vec2 vertTexCoord;
 
 //window res
 uniform vec2 resolution;
 
 //pass to frag
-varying vec2 fragTexCoord;
+COMPAT_VARYING vec2 fragTexCoord;
 
 void main() {
    // convert the rectangle from pixels to 0.0 to 1.0
