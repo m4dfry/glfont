@@ -68,8 +68,6 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 }
 
 var fragmentFontShader = `
-#version 120
-
 #if __VERSION__ >= 130
 #define COMPAT_VARYING out
 #define COMPAT_ATTRIBUTE in
@@ -95,8 +93,6 @@ void main()
 }` + "\x00"
 
 var vertexFontShader = `
-#version 120
-
 #if __VERSION__ >= 130
 #define COMPAT_VARYING out
 #define COMPAT_ATTRIBUTE in
