@@ -8,7 +8,10 @@ import (
 )
 
 //newProgram links the frag and vertex shader programs
-func newProgram(vertexShaderSource, fragmentShaderSource string) (uint32, error) {
+func newProgram(GLSLVersion uint, vertexShaderSource, fragmentShaderSource string) (uint32, error) {
+	vertexShaderSource = fmt.Sprintf("#version %d\n", GLSLVersion) + vertexShaderSource
+	fragmentShaderSource = fmt.Sprintf("#version %d\n", GLSLVersion) + fragmentShaderSource
+
 	vertexShader, err := compileShader(vertexShaderSource, gl.VERTEX_SHADER)
 	if err != nil {
 		return 0, err
@@ -69,10 +72,11 @@ func compileShader(source string, shaderType uint32) (uint32, error) {
 
 var fragmentFontShader = `
 #if __VERSION__ >= 130
-#define COMPAT_VARYING out
+#define COMPAT_VARYING in
 #define COMPAT_ATTRIBUTE in
 #define COMPAT_TEXTURE texture
 #define COMPAT_FRAGCOLOR FragColor
+out vec4 FragColor;
 #else
 #define COMPAT_VARYING varying
 #define COMPAT_ATTRIBUTE attribute
@@ -81,7 +85,6 @@ var fragmentFontShader = `
 #endif
 
 COMPAT_VARYING vec2 fragTexCoord;
-COMPAT_VARYING vec4 FragColor;
 
 uniform sampler2D tex;
 uniform vec4 textColor;
