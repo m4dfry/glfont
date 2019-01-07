@@ -19,12 +19,14 @@ const (
 
 // A Font allows rendering of text to an OpenGL context.
 type Font struct {
-	fontChar []*character
-	vao      uint32
-	vbo      uint32
-	program  uint32
-	texture  uint32 // Holds the glyph texture id.
-	color    color
+	fontChar    []*character
+	vao         uint32
+	vbo         uint32
+	program     uint32
+	textureID   uint32 // Holds the glyph texture id.
+	color       color
+	atlasWidth  float32
+	atlasHeight float32
 }
 
 type color struct {
@@ -33,6 +35,8 @@ type color struct {
 	b float32
 	a float32
 }
+
+type point [4]float32
 
 //LoadFont loads the specified font at the given scale.
 func LoadFont(file string, scale int32, windowWidth int, windowHeight int, GLSLVersion uint) (*Font, error) {
@@ -92,16 +96,11 @@ func (f *Font) Printf(x, y float32, scale float32, fs string, argv ...interface{
 	gl.UseProgram(f.program)
 	//set text color
 	gl.Uniform4f(gl.GetUniformLocation(f.program, gl.Str("textColor\x00")), f.color.r, f.color.g, f.color.b, f.color.a)
-	//set screen resolution
-	//resUniform := gl.GetUniformLocation(f.program, gl.Str("resolution\x00"))
-	//gl.Uniform2f(resUniform, float32(2560), float32(1440))
 
-	gl.ActiveTexture(gl.TEXTURE0)
-	gl.BindVertexArray(f.vao)
+	var coords []point
 
 	// Iterate through all characters in string
 	for i := range indices {
-
 		//get rune
 		runeIndex := indices[i]
 
@@ -126,34 +125,23 @@ func (f *Font) Printf(x, y float32, scale float32, fs string, argv ...interface{
 		var y1 = ypos
 		var y2 = ypos + h
 
-		//setup quad array
-		var vertices = []float32{
-			//  X, Y, Z, U, V
-			// Front
-			x1, y1, 0.0, 0.0,
-			x2, y1, 1.0, 0.0,
-			x1, y2, 0.0, 1.0,
-			x1, y2, 0.0, 1.0,
-			x2, y1, 1.0, 0.0,
-			x2, y2, 1.0, 1.0}
+		coords = append(coords, point{x1, y1, float32(ch.x) / f.atlasWidth, float32(ch.y) / f.atlasHeight})
+		coords = append(coords, point{x2, y1, float32(ch.x + ch.width)/f.atlasWidth, float32(ch.y) / f.atlasHeight})
+		coords = append(coords, point{x1, y2, float32(ch.x) / f.atlasWidth, float32(ch.y + ch.height) / f.atlasHeight})
+		coords = append(coords, point{x2, y1, float32(ch.x + ch.width)/f.atlasWidth, float32(ch.y) / f.atlasHeight})
+		coords = append(coords, point{x1, y2, float32(ch.x) / f.atlasWidth, float32(ch.y + ch.height) / f.atlasHeight})
+		coords = append(coords, point{x2, y2, float32(ch.x + ch.width)/f.atlasWidth, float32(ch.y + ch.height) / f.atlasHeight})
 
-		// Render glyph texture over quad
-		gl.BindTexture(gl.TEXTURE_2D, ch.textureID)
-		// Update content of VBO memory
-		gl.BindBuffer(gl.ARRAY_BUFFER, f.vbo)
-
-		//BufferSubData(target Enum, offset int, data []byte)
-		gl.BufferSubData(gl.ARRAY_BUFFER, 0, len(vertices)*4, gl.Ptr(vertices)) // Be sure to use glBufferSubData and not glBufferData
-		// Render quad
-		gl.DrawArrays(gl.TRIANGLES, 0, 16)
-
-		gl.BindBuffer(gl.ARRAY_BUFFER, 0)
 		// Now advance cursors for next glyph (note that advance is number of 1/64 pixels)
 		x += float32((ch.advance >> 6)) * scale // Bitshift by 6 to get value in pixels (2^6 = 64 (divide amount of 1/64th pixels by 64 to get amount of pixels))
-
 	}
 
-	//clear opengl textures and programs
+	gl.BindVertexArray(f.vao)
+	gl.ActiveTexture(gl.TEXTURE0)
+	gl.BindTexture(gl.TEXTURE_2D, f.textureID)
+	gl.BindBuffer(gl.ARRAY_BUFFER, f.vbo)
+	gl.BufferData(gl.ARRAY_BUFFER, len(coords)*16, gl.Ptr(coords), gl.DYNAMIC_DRAW)
+	gl.DrawArrays(gl.TRIANGLES, 0, int32(len(coords)))
 	gl.BindVertexArray(0)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 	gl.UseProgram(0)
