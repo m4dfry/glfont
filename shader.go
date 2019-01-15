@@ -92,7 +92,7 @@ uniform vec4 textColor;
 void main()
 {
     vec4 sampled = vec4(1.0, 1.0, 1.0, COMPAT_TEXTURE(tex, fragTexCoord).r);
-    COMPAT_FRAGCOLOR = textColor * sampled;
+    COMPAT_FRAGCOLOR = min(textColor, vec4(1.0, 1.0, 1.0, 1.0)) * sampled;
 }` + "\x00"
 
 var vertexFontShader = `
