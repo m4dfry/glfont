@@ -59,7 +59,7 @@ func LoadFont(file string, scale int32, windowWidth int, windowHeight int, GLSLV
 	resUniform := gl.GetUniformLocation(program, gl.Str("resolution\x00"))
 	gl.Uniform2f(resUniform, float32(windowWidth), float32(windowHeight))
 
-	return LoadTrueTypeFont(program, fd, scale, 32, 127, LeftToRight)
+	return LoadTrueTypeFont(program, fd, scale, 32, 256, LeftToRight)
 }
 
 //SetColor allows you to set the text color to be used when you draw the text
