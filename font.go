@@ -105,14 +105,15 @@ func (f *Font) Printf(x, y float32, scale float32, fs string, argv ...interface{
 		//get rune
 		runeIndex := indices[i]
 
+		var ch *character
 		//skip runes that are not in font chacter range
 		if int(runeIndex)-int(lowChar) > len(f.fontChar) || runeIndex < lowChar {
-			//fmt.Printf("%c %d\n", runeIndex, runeIndex)
-			continue
+			// print a ?
+			ch = f.fontChar[int(rune('?'))-int(lowChar)]
+		} else {
+			// find rune in fontChar list
+			ch = f.fontChar[runeIndex-lowChar]
 		}
-
-		//find rune in fontChar list
-		ch := f.fontChar[runeIndex-lowChar]
 
 		//calculate position and size for current rune
 		xpos := x + float32(ch.bearingH)*scale
