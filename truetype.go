@@ -74,8 +74,9 @@ func LoadTrueTypeFont(program uint32, r io.Reader, scale int32, low, high rune, 
 	rgba := image.NewRGBA(rect)
 	draw.Draw(rgba, rgba.Bounds(), bg, image.ZP, draw.Src)
 
-	x := 0
-	y := 0
+	margin := 2
+	x := margin
+	y := margin
 
 	//make each gylph
 	for ch := low; ch <= high; ch++ {
@@ -89,7 +90,7 @@ func LoadTrueTypeFont(program uint32, r io.Reader, scale int32, low, high rune, 
 		gh := int32((gBnd.Max.Y - gBnd.Min.Y) >> 6)
 		gw := int32((gBnd.Max.X - gBnd.Min.X) >> 6)
 
-		//if gylph has no diamensions set to a max value
+		//if gylph has no dimensions set to a max value
 		if gw == 0 || gh == 0 {
 			gBnd = ttf.Bounds(fixed.Int26_6(scale))
 			gw = int32((gBnd.Max.X - gBnd.Min.X) >> 6)
@@ -132,10 +133,10 @@ func LoadTrueTypeFont(program uint32, r io.Reader, scale int32, low, high rune, 
 		py := (gAscent) + y
 		pt := freetype.Pt(px, py)
 
-		x += int(gw) + 1
-		if x + int(gw) + 1 > int(f.atlasWidth) {
+		x += int(gw) + margin
+		if x+int(gw)+margin > int(f.atlasWidth) {
 			x = 0
-			y += int(lineHeight) + 1
+			y += int(lineHeight) + margin
 		}
 
 		// Draw the text from mask to image
@@ -152,13 +153,13 @@ func LoadTrueTypeFont(program uint32, r io.Reader, scale int32, low, high rune, 
 	gl.GenTextures(1, &f.textureID)
 	gl.BindTexture(gl.TEXTURE_2D, f.textureID)
 	gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR)
 	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-	gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA, int32(rgba.Rect.Dx()), int32(rgba.Rect.Dy()), 0,
 		gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(rgba.Pix))
 
+	gl.GenerateMipmap(gl.TEXTURE_2D)
 	gl.BindTexture(gl.TEXTURE_2D, 0)
 
 	// Configure VAO/VBO for texture quads
@@ -166,8 +167,6 @@ func LoadTrueTypeFont(program uint32, r io.Reader, scale int32, low, high rune, 
 	gl.GenBuffers(1, &f.vbo)
 	gl.BindVertexArray(f.vao)
 	gl.BindBuffer(gl.ARRAY_BUFFER, f.vbo)
-
-	gl.BufferData(gl.ARRAY_BUFFER, 6*4*4, nil, gl.STATIC_DRAW)
 
 	vertAttrib := uint32(gl.GetAttribLocation(f.program, gl.Str("vert\x00")))
 	gl.EnableVertexAttribArray(vertAttrib)
